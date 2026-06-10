@@ -22,13 +22,13 @@ export default function Dashboard() {
 
         <div className="grid">
           {METALS.map((metal) => (
-            <MetalCard key={metal.symbol} metal={metal} />
+            <MetalCard key={metal.shortName} metal={metal} />
           ))}
         </div>
       </div>
 
       <div className="footer">
-        <span>Graphiques fournis par TradingView</span>
+        <span>Graphiques fournis par Investing.com</span>
         <span>{new Date().getFullYear()}</span>
       </div>
     </>
@@ -36,23 +36,6 @@ export default function Dashboard() {
 }
 
 function MetalCard({ metal }) {
-  const id = metal.symbol.replace(/[^a-zA-Z0-9]/g, '_');
-  const params = new URLSearchParams({
-    symbol: metal.symbol,
-    interval: 'D',
-    theme: 'dark',
-    locale: 'fr',
-    style: '1',
-    hide_side_toolbar: '1',
-    allow_symbol_change: '0',
-    save_image: '0',
-    calendar: 'false',
-    hide_volume: '1',
-    support_host: 'https://www.tradingview.com',
-  });
-
-  const chartUrl = `https://s.tradingview.com/widgetembed/?${params.toString()}`;
-
   return (
     <div className="card">
       <div className="card-header">
@@ -62,28 +45,15 @@ function MetalCard({ metal }) {
           </div>
           <div className="card-unit">{metal.unit}</div>
         </div>
-        <span
-          className="badge"
-          style={{
-            background: `${metal.color}18`,
-            color: metal.color,
-          }}
-        >
-          {metal.symbol.split(':')[1] || metal.symbol}
+        <span className="badge" style={{ background: `${metal.color}18`, color: metal.color }}>
+          {metal.shortName}
         </span>
       </div>
-
-      <div
-        className="accent-line"
-        style={{ backgroundColor: metal.color }}
-      />
-
+      <div className="accent-line" style={{ backgroundColor: metal.color }} />
       <div className="card-note">{metal.note}</div>
-
       <div className="chart-container">
         <iframe
-          key={id}
-          src={chartUrl}
+          src={metal.chartUrl}
           title={`Graphique ${metal.name}`}
           frameBorder="0"
           scrolling="no"
