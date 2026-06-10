@@ -1,34 +1,38 @@
 // metals.config.js
-export const SITE_TITLE = "Tableau de bord des Métaux Transitoires";
-export const SITE_SUBTITLE = "Suivi des cours en temps réel et historiques (Yahoo Finance)";
+export const SITE_TITLE = "Observatoire des Ressources Minérales Sous-Marines";
+export const SITE_SUBTITLE = "Suivi des cours des métaux critiques présents dans les gisements océaniques profonds";
 
 export const METALS = [
   {
-    name: "Or",
-    shortName: "GC=F",
-    unit: "USD / Once troy",
-    color: "#D4A843",
-    note: "Valeur refuge par excellence en période d'inflation."
-  },
-  {
-    name: "Argent",
-    shortName: "SI=F",
-    unit: "USD / Once troy",
-    color: "#A6A6A6",
-    note: "Fortement demandé par l'industrie électronique et solaire."
-  },
-  {
-    name: "Cuivre",
+    name: "Nodules Polymétalliques",
+    proxyName: "Cuivre (COMEX)",
     shortName: "HG=F",
-    unit: "USD / Livre",
-    color: "#D77A4A",
-    note: "Indicateur avancé de la santé économique mondiale."
+    unit: "USD / Livre (lb)",
+    color: "#3B82F6",
+    note: "Gisements des plaines abyssales (4000-6000m). Riches en Manganèse, Nickel, Cuivre et Cobalt."
   },
   {
-    name: "Platine",
+    name: "Encroûtements Cobaltifères",
+    proxyName: "Platine (NYMEX)",
     shortName: "PL=F",
     unit: "USD / Once troy",
-    color: "#E5E5E5",
-    note: "Crucial pour les catalyseurs et les technologies hydrogène."
+    color: "#A855F7",
+    note: "Formés sur les flancs des monts sous-marins (800-2500m). Fortes concentrations en Cobalt et Platine."
+  },
+  {
+    name: "Amas Sulfurés Hydrothermaux",
+    proxyName: "Or (COMEX)",
+    shortName: "GC=F",
+    unit: "USD / Once troy",
+    color: "#EAB308",
+    note: "Situés au niveau des dorsales océaniques. Riches en Cuivre, Zinc, Or et Argent."
+  },
+  {
+    name: "Terres Rares Océaniques",
+    proxyName: "Proxy ETF (REMX)",
+    shortName: "REMX",
+    unit: "Cours de l'indice (USD)",
+    color: "#10B981",
+    note: "Boues métallifères de grande profondeur. Composées de Terres Rares lourdes et d'Yttrium (REY)."
   }
 ];
