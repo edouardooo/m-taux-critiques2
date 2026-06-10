@@ -1,44 +1,34 @@
-// pages/api/metal.js
-// Appelle Yahoo Finance côté serveur (pas de CORS, pas de clé API)
+// metals.config.js
+export const SITE_TITLE = "Tableau de bord des Métaux Transitoires";
+export const SITE_SUBTITLE = "Suivi des cours en temps réel et historiques (Yahoo Finance)";
 
-export default async function handler(req, res) {
-  const { symbol } = req.query;
-  if (!symbol) return res.status(400).json({ error: 'symbol requis' });
-
-  try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=6mo`;
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) throw new Error(`Yahoo: ${response.status}`);
-
-    const data = await response.json();
-    const chart = data?.chart?.result?.[0];
-
-    if (!chart) throw new Error('Pas de données');
-
-    const timestamps = chart.timestamp;
-    const closes = chart.indicators.quote[0].close;
-    const meta = chart.meta;
-
-    // Nettoie les nulls
-    const points = timestamps
-      .map((t, i) => ({ date: t * 1000, price: closes[i] }))
-      .filter(p => p.price !== null && p.price !== undefined);
-
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
-    res.status(200).json({
-      symbol: meta.symbol,
-      currency: meta.currency,
-      currentPrice: meta.regularMarketPrice,
-      previousClose: meta.previousClose || meta.chartPreviousClose,
-      points,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+export const METALS = [
+  {
+    name: "Or",
+    shortName: "GC=F",
+    unit: "USD / Once troy",
+    color: "#D4A843",
+    note: "Valeur refuge par excellence en période d'inflation."
+  },
+  {
+    name: "Argent",
+    shortName: "SI=F",
+    unit: "USD / Once troy",
+    color: "#A6A6A6",
+    note: "Fortement demandé par l'industrie électronique et solaire."
+  },
+  {
+    name: "Cuivre",
+    shortName: "HG=F",
+    unit: "USD / Livre",
+    color: "#D77A4A",
+    note: "Indicateur avancé de la santé économique mondiale."
+  },
+  {
+    name: "Platine",
+    shortName: "PL=F",
+    unit: "USD / Once troy",
+    color: "#E5E5E5",
+    note: "Crucial pour les catalyseurs et les technologies hydrogène."
   }
-}
+];
