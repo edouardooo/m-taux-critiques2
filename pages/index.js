@@ -44,6 +44,10 @@ export default function Dashboard() {
       </div>
 
       <div className="main">
+        <div className="banner" style={{ background: 'rgba(239, 68, 68, 0.08)', borderColor: '#EF4444' }}>
+          <strong>Méthodologie Scientifique :</strong> La majorité des métaux sous-marins n'ont pas de marché boursier public ouvert (contrats de gré à gré privés). Les badges indiquent le niveau de fiabilité de l'instrument financier utilisé.
+        </div>
+
         <div className="grid">
           {METALS.map((metal) => (
             <MetalCard key={metal.shortName} metal={metal} range={range} />
@@ -52,7 +56,7 @@ export default function Dashboard() {
       </div>
 
       <div className="footer">
-        <span>Flux hybride (Indices Spots pur, ETCs physiques & Pure-Plays stratégiques)</span>
+        <span>Structure de transparence des données de marchés — Observatoire des Grands Fonds</span>
         <span>{new Date().getFullYear()}</span>
       </div>
     </>
@@ -63,6 +67,9 @@ function MetalCard({ metal, range }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // État pour suivre le point survolé par l'utilisateur
+  const [hoveredPoint, setHoveredPoint] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -76,11 +83,12 @@ function MetalCard({ metal, range }) {
         setError(null);
       } catch (err) {
         setError(err.message);
-      } finally {
+      } finaly {
         setLoading(false);
       }
     }
     fetchData();
+    setHoveredPoint(null); // Reset le survol lors d'un changement de période
   }, [metal.shortName, range]);
 
   const prices = data?.points?.map(p => p.price) || [];
@@ -91,49 +99,84 @@ function MetalCard({ metal, range }) {
     ? (((data.currentPrice - data.previousClose) / data.previousClose) * 100).toFixed(2)
     : "0.00";
 
+  const getProxyColor = (type) => {
+    if (!type) return '#EF4444';
+    if (type.includes('Physique')) return '#10B981';
+    if (type.includes('Acceptable') || type.includes('Panier')) return '#F59E0B';
+    return '#EF4444';
+  };
+
+  const badgeColor = getProxyColor(metal.proxyType);
+
+  // Valeurs affichées : switch automatique entre la valeur actuelle et la valeur survolée au curseur
+  const displayPrice = hoveredPoint ? hoveredPoint.price : data?.currentPrice;
+  const isHovering = hoveredPoint !== null;
+
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       <div>
-        <div className="card-header">
+        <div className="card-header" style={{ paddingBottom: '4px' }}>
           <div>
             <div className="card-title" style={{ color: metal.color, fontSize: '16px', fontWeight: '700' }}>
               {metal.name}
             </div>
             <div className="card-unit">{metal.unit}</div>
           </div>
-          <span className="badge" style={{ background: `${metal.color}15`, color: metal.color, border: `1px solid ${metal.color}30` }}>
-            {metal.proxyName.split(' ')[0]}
+          <span className="badge" style={{ background: `${badgeColor}15`, color: badgeColor, border: `1px solid ${badgeColor}40`, fontSize: '10px' }}>
+            {metal.proxyType || "Proxy Action"}
           </span>
         </div>
-        <div className="accent-line" style={{ backgroundColor: metal.color, opacity: 0.4 }} />
-        <div className="card-note" style={{ minHeight: '36px', marginTop: '8px' }}>{metal.note}</div>
+
+        <div style={{ padding: '0 16px 8px', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--muted)' }}>
+          <span>Source : <span style={{ fontFamily: 'monospace', color: '#E8EBF0' }}>{metal.proxyName}</span></span>
+          {/* Affiche la date précise du point survolé */}
+          {isHovering && (
+            <span style={{ color: metal.color, fontWeight: '600', background: `${metal.color}15`, padding: '0 4px', borderRadius: '3px' }}>
+              {new Date(hoveredPoint.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+            </span>
+          )}
+        </div>
+
+        <div className="accent-line" style={{ backgroundColor: metal.color, opacity: 0.3 }} />
+        <div className="card-note" style={{ minHeight: '44px', marginTop: '8px', fontSize: '12px', lineHeight: '1.4' }}>
+          {metal.note}
+        </div>
       </div>
 
       <div>
         <div style={{ padding: '0 16px 8px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
           {loading ? (
-            <span style={{ fontSize: '20px', color: '#4A5568' }}>Chargement...</span>
+            <span style={{ fontSize: '20px', color: '#4A5568' }}>Analyse des données...</span>
           ) : error ? (
-            <span style={{ fontSize: '14px', color: '#EF4444' }}>Indice indisponible</span>
+            <span style={{ fontSize: '13px', color: '#EF4444' }}>Indice non coté</span>
           ) : (
             <>
-              <span style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px' }}>
-                {data.currentPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span style={{ fontSize: '14px', color: 'var(--muted)' }}>{data.currency}</span>
+              <span style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', color: isHovering ? '#FFF' : 'inherit' }}>
+                {displayPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 'normal' }}>{data.currency}</span>
               </span>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: parseFloat(changePercent) >= 0 ? '#10B981' : '#EF4444' }}>
-                {parseFloat(changePercent) >= 0 ? '▲ +' : '▼ '}{changePercent}%
-              </span>
+              {!isHovering ? (
+                <span style={{ fontSize: '13px', fontWeight: '700', color: parseFloat(changePercent) >= 0 ? '#10B981' : '#EF4444' }}>
+                  {parseFloat(changePercent) >= 0 ? '▲ +' : '▼ '}{changePercent}%
+                </span>
+              ) : (
+                <span style={{ fontSize: '11px', color: 'var(--muted)', fontStyle: 'italic' }}>[Historique]</span>
+              )}
             </>
           )}
         </div>
 
-        {/* Conteneur Graphique Avancé */}
-        <div style={{ height: '140px', padding: '0 16px 12px position relative' }}>
+        <div style={{ height: '140px', padding: '0 16px 12px' }}>
           {!loading && !error && data?.points?.length > 0 ? (
-            <EnhancedChart points={data.points} color={metal.color} minPrice={minPeriod} maxPrice={maxPeriod} />
+            <InteractiveChart 
+              points={data.points} 
+              color={metal.color} 
+              minPrice={minPeriod} 
+              maxPrice={maxPeriod}
+              onHoverPoint={(p) => setHoveredPoint(p)}
+            />
           ) : (
             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4A5568', fontSize: '12px' }}>
-              {loading ? 'Extraction des strates temporelles...' : 'Pas de graphique'}
+              {loading ? 'Sondage des flux financiers...' : 'Graphique indisponible'}
             </div>
           )}
         </div>
@@ -142,11 +185,11 @@ function MetalCard({ metal, range }) {
   );
 }
 
-function EnhancedChart({ points, color, minPrice, maxPrice }) {
+function InteractiveChart({ points, color, minPrice, maxPrice, onHoverPoint }) {
   const width = 400;
   const height = 130;
   
-  const paddingLeft = 50;
+  const paddingLeft = 52;
   const paddingRight = 10;
   const paddingTop = 15;
   const paddingBottom = 20;
@@ -155,7 +198,9 @@ function EnhancedChart({ points, color, minPrice, maxPrice }) {
   const chartHeight = height - paddingTop - paddingBottom;
   const priceRange = maxPrice - minPrice || 1;
 
-  // Génération des coordonnées de la courbe boursière
+  const [activeIndex, setActiveIndex] = useState(null);
+
+  // Conversion mathématique des coordonnées
   const coords = points.map((p, i) => {
     const x = paddingLeft + (i / (points.length - 1)) * chartWidth;
     const y = paddingTop + chartHeight - ((p.price - minPrice) / priceRange) * chartHeight;
@@ -163,52 +208,102 @@ function EnhancedChart({ points, color, minPrice, maxPrice }) {
   });
 
   const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x} ${c.y}`).join(' ');
-  
-  // Chemin fermé pour le dégradé de couleur sous la courbe (Area Fill)
   const areaPath = coords.length 
     ? `${linePath} L ${coords[coords.length - 1].x} ${paddingTop + chartHeight} L ${coords[0].x} ${paddingTop + chartHeight} Z`
     : '';
 
   const formatDate = (ts) => new Date(ts).toLocaleDateString('fr-FR', { month: '2-digit', year: '2-digit' });
-
-  // Identifiant unique pour éviter les collisions de dégradés SVG
   const gradientId = `grad-${color.replace('#', '')}`;
 
+  // Gestionnaire de calcul de collision du curseur souris
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left - paddingLeft;
+    
+    // Calcul du ratio X converti en index de tableau
+    const pct = Math.max(0, Math.min(1, mouseX / chartWidth));
+    const index = Math.round(pct * (points.length - 1));
+    
+    setActiveIndex(index);
+    if (onHoverPoint) onHoverPoint(points[index]);
+  };
+
+  const handleMouseLeave = () => {
+    setActiveIndex(null);
+    if (onHoverPoint) onHoverPoint(null); // Restaure le prix actuel du marché
+  };
+
+  const activeCoord = activeIndex !== null ? coords[activeIndex] : null;
+
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: 'visible' }}>
+    <svg 
+      viewBox={`0 0 ${width} ${height}`} 
+      width="100%" 
+      height="100%" 
+      style={{ overflow: 'visible' }}
+    >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="0%" stopColor={color} stopOpacity="0.30" />
           <stop offset="100%" stopColor={color} stopOpacity="0.00" />
         </linearGradient>
       </defs>
 
-      {/* Lignes de repères en arrière-plan */}
-      <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft + chartWidth} y2={paddingTop} stroke="#1E2A3A" strokeWidth="0.5" strokeDasharray="3 3" />
-      <line x1={paddingLeft} y1={paddingTop + chartHeight} x2={paddingLeft + chartWidth} y2={paddingTop + chartHeight} stroke="#1E2A3A" strokeWidth="1" />
-      <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={paddingTop + chartHeight} stroke="#1E2A3A" strokeWidth="1" />
+      {/* Grille statique de fond */}
+      <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft + chartWidth} y2={paddingTop} stroke="#1E2A3A" strokeWidth="0.5" strokeDasharray="3 3" pointerEvents="none" />
+      <line x1={paddingLeft} y1={paddingTop + chartHeight} x2={paddingLeft + chartWidth} y2={paddingTop + chartHeight} stroke="#1E2A3A" strokeWidth="1" pointerEvents="none" />
+      <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={paddingTop + chartHeight} stroke="#1E2A3A" strokeWidth="1" pointerEvents="none" />
 
-      {/* Remplissage de l'aire (Gradient) */}
-      {areaPath && <path d={areaPath} fill={`url(#${gradientId})`} />}
+      {/* Rendu des tracés vectoriels */}
+      {areaPath && <path d={areaPath} fill={`url(#${gradientId})`} pointerEvents="none" />}
+      {linePath && <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />}
 
-      {/* Ligne principale du cours */}
-      {linePath && <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
-
-      {/* Bornes financières (Y-Axis Labels) */}
-      <text x={paddingLeft - 8} y={paddingTop + 4} fill="#6272a4" fontSize="10" fontWeight="600" textAnchor="end">
+      {/* Bornes financières (Y Axis) */}
+      <text x={paddingLeft - 8} y={paddingTop + 4} fill="#6272a4" fontSize="10" pointerEvents="none" fontWeight="600" textAnchor="end">
         {maxPrice.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}
       </text>
-      <text x={paddingLeft - 8} y={paddingTop + chartHeight + 4} fill="#6272a4" fontSize="10" fontWeight="600" textAnchor="end">
+      <text x={paddingLeft - 8} y={paddingTop + chartHeight + 4} fill="#6272a4" fontSize="10" pointerEvents="none" fontWeight="600" textAnchor="end">
         {minPrice.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}
       </text>
 
-      {/* Bornes temporelles (X-Axis Labels) */}
-      <text x={paddingLeft} y={paddingTop + chartHeight + 15} fill="#4A5568" fontSize="10" textAnchor="start">
+      {/* Bornes temporelles (X Axis) */}
+      <text x={paddingLeft} y={paddingTop + chartHeight + 15} fill="#4A5568" fontSize="10" pointerEvents="none" textAnchor="start">
         {formatDate(points[0].date)}
       </text>
-      <text x={paddingLeft + chartWidth} y={paddingTop + chartHeight + 15} fill="#4A5568" fontSize="10" textAnchor="end">
+      <text x={paddingLeft + chartWidth} y={paddingTop + chartHeight + 15} fill="#4A5568" fontSize="10" pointerEvents="none" textAnchor="end">
         {formatDate(points[points.length - 1].date)}
       </text>
+
+      {/* RÉTICULE DYNAMIQUE (Affiche la position si survolé) */}
+      {activeCoord && (
+        <g pointerEvents="none">
+          {/* Ligne verticale témoin */}
+          <line 
+            x1={activeCoord.x} 
+            y1={paddingTop} 
+            x2={activeCoord.x} 
+            y2={paddingTop + chartHeight} 
+            stroke="#6272a4" 
+            strokeWidth="1" 
+            strokeDasharray="2 2" 
+          />
+          {/* Point d'ancrage magnétique rétroéclairé */}
+          <circle cx={activeCoord.x} cy={activeCoord.y} r="6" fill={color} opacity="0.4" />
+          <circle cx={activeCoord.x} cy={activeCoord.y} r="3.5" fill={color} stroke="#0B131F" strokeWidth="1.5" />
+        </g>
+      )}
+
+      {/* ZONE INTERACTIVE INVISIBLE OBLIGATOIRE (Reçoit tous les événements souris) */}
+      <rect
+        x={paddingLeft}
+        y={paddingTop}
+        width={chartWidth}
+        height={chartHeight}
+        fill="transparent"
+        style={{ cursor: 'crosshair', pointerEvents: 'all' }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      />
     </svg>
   );
 }
