@@ -1,70 +1,44 @@
-/**
- * ============================================================
- *  FICHIER DE CONFIGURATION — modifie uniquement ce fichier
- * ============================================================
- *
- *  Pour ajouter un métal : copie un bloc et change les valeurs
- *  Pour retirer un métal : supprime son bloc
- *
- *  symbol : code TradingView  (ex: "COMEX:HG1!", "LME:NI1!")
- *  Pour trouver un symbole : va sur tradingview.com, recherche
- *  le métal, copie le code affiché en haut à gauche du graphe
- * ============================================================
- */
+// pages/api/metal.js
+// Appelle Yahoo Finance côté serveur (pas de CORS, pas de clé API)
 
-const SITE_TITLE = "Métaux des fonds marins";
-const SITE_SUBTITLE = "Nodules polymétalliques · Encroûtements cobaltifères · Sulfures hydrothermaux";
+export default async function handler(req, res) {
+  const { symbol } = req.query;
+  if (!symbol) return res.status(400).json({ error: 'symbol requis' });
 
-const METALS = [
-  {
-    name: "Cobalt",
-    symbol: "LME:CO1!",
-    unit: "USD / tonne",
-    note: "Nodules polymétalliques & encroûtements cobaltifères",
-    color: "#5B8FF9",
-  },
-  {
-    name: "Nickel",
-    symbol: "LME:NI1!",
-    unit: "USD / tonne",
-    note: "Nodules polymétalliques",
-    color: "#7EB8D4",
-  },
-  {
-    name: "Cuivre",
-    symbol: "COMEX:HG1!",
-    unit: "USD / livre",
-    note: "Sulfures hydrothermaux & nodules",
-    color: "#E07B3A",
-  },
-  {
-    name: "Manganèse",
-    symbol: "TVC:MANGANESE",
-    unit: "USD / tonne",
-    note: "Nodules polymétalliques & encroûtements",
-    color: "#A87FC0",
-  },
-  {
-    name: "Zinc",
-    symbol: "LME:ZN1!",
-    unit: "USD / tonne",
-    note: "Sulfures hydrothermaux",
-    color: "#9BA8B5",
-  },
-  {
-    name: "Or",
-    symbol: "COMEX:GC1!",
-    unit: "USD / once",
-    note: "Sulfures hydrothermaux",
-    color: "#D4A843",
-  },
-  {
-    name: "Lithium",
-    symbol: "TVC:LITHIUM",
-    unit: "CNY / tonne",
-    note: "Sédiments marins profonds",
-    color: "#5EC47A",
-  },
-];
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=6mo`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json',
+      },
+    });
 
-module.exports = { SITE_TITLE, SITE_SUBTITLE, METALS };
+    if (!response.ok) throw new Error(`Yahoo: ${response.status}`);
+
+    const data = await response.json();
+    const chart = data?.chart?.result?.[0];
+
+    if (!chart) throw new Error('Pas de données');
+
+    const timestamps = chart.timestamp;
+    const closes = chart.indicators.quote[0].close;
+    const meta = chart.meta;
+
+    // Nettoie les nulls
+    const points = timestamps
+      .map((t, i) => ({ date: t * 1000, price: closes[i] }))
+      .filter(p => p.price !== null && p.price !== undefined);
+
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
+    res.status(200).json({
+      symbol: meta.symbol,
+      currency: meta.currency,
+      currentPrice: meta.regularMarketPrice,
+      previousClose: meta.previousClose || meta.chartPreviousClose,
+      points,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
