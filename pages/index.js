@@ -11,8 +11,6 @@ export default function Dashboard() {
       </div>
 
       <div className="main">
-
-        {/* Warning: REY not listed */}
         <div className="banner">
           ⚠ Les <strong style={{ color: '#D4A843' }}>terres rares (REY)</strong> ne sont pas cotées
           sur des marchés organisés. Consulter{' '}
@@ -22,7 +20,6 @@ export default function Dashboard() {
           {' '}pour leurs prix.
         </div>
 
-        {/* Cards grid */}
         <div className="grid">
           {METALS.map((metal) => (
             <MetalCard key={metal.symbol} metal={metal} />
@@ -39,18 +36,22 @@ export default function Dashboard() {
 }
 
 function MetalCard({ metal }) {
-  // Build TradingView iframe URL
-  const chartUrl =
-    `https://s.tradingview.com/widgetembed/?frameElementId=tv_chart` +
-    `&symbol=${encodeURIComponent(metal.symbol)}` +
-    `&interval=D` +
-    `&hidesidetoolbar=1` +
-    `&hidetoptoolbar=0` +
-    `&saveimage=0` +
-    `&toolbarbg=0F1520` +
-    `&theme=dark` +
-    `&locale=fr` +
-    `&style=1`;
+  const id = metal.symbol.replace(/[^a-zA-Z0-9]/g, '_');
+  const params = new URLSearchParams({
+    symbol: metal.symbol,
+    interval: 'D',
+    theme: 'dark',
+    locale: 'fr',
+    style: '1',
+    hide_side_toolbar: '1',
+    allow_symbol_change: '0',
+    save_image: '0',
+    calendar: 'false',
+    hide_volume: '1',
+    support_host: 'https://www.tradingview.com',
+  });
+
+  const chartUrl = `https://s.tradingview.com/widgetembed/?${params.toString()}`;
 
   return (
     <div className="card">
@@ -81,9 +82,10 @@ function MetalCard({ metal }) {
 
       <div className="chart-container">
         <iframe
+          key={id}
           src={chartUrl}
           title={`Graphique ${metal.name}`}
-          allowTransparency={true}
+          frameBorder="0"
           scrolling="no"
           allowFullScreen={true}
         />
