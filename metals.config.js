@@ -1,44 +1,42 @@
-// pages/api/metal.js
-// Appelle Yahoo Finance côté serveur (pas de CORS, pas de clé API)
+const SITE_TITLE = "Métaux des fonds marins";
+const SITE_SUBTITLE = "Nodules polymétalliques · Encroûtements cobaltifères · Sulfures hydrothermaux";
 
-export default async function handler(req, res) {
-  const { symbol } = req.query;
-  if (!symbol) return res.status(400).json({ error: 'symbol requis' });
+const METALS = [
+  {
+    name: "Cobalt", shortName: "Cobalt", unit: "USD / tonne",
+    note: "Nodules polymétalliques & encroûtements cobaltifères", color: "#5B8FF9",
+    chartUrl: "https://sslcharts.investing.com/index.php?force_lang=5&pair_id=961983&theme=dark",
+  },
+  {
+    name: "Nickel", shortName: "Nickel", unit: "USD / tonne",
+    note: "Nodules polymétalliques", color: "#7EB8D4",
+    chartUrl: "https://sslcharts.investing.com/index.php?force_lang=5&pair_id=959629&theme=dark",
+  },
+  {
+    name: "Cuivre", shortName: "Cuivre", unit: "USD / tonne",
+    note: "Sulfures hydrothermaux & nodules", color: "#E07B3A",
+    chartUrl: "https://sslcharts.investing.com/index.php?force_lang=5&pair_id=959630&theme=dark",
+  },
+  {
+    name: "Manganèse", shortName: "Manganèse", unit: "USD / tonne",
+    note: "Nodules polymétalliques & encroûtements", color: "#A87FC0",
+    chartUrl: "https://sslcharts.investing.com/index.php?force_lang=5&pair_id=961985&theme=dark",
+  },
+  {
+    name: "Zinc", shortName: "Zinc", unit: "USD / tonne",
+    note: "Sulfures hydrothermaux", color: "#9BA8B5",
+    chartUrl: "https://sslcharts.investing.com/index.php?force_lang=5&pair_id=959635&theme=dark",
+  },
+  {
+    name: "Or", shortName: "Or", unit: "USD / once",
+    note: "Sulfures hydrothermaux", color: "#D4A843",
+    chartUrl: "https://sslcharts.investing.com/index.php?force_lang=5&pair_id=68&theme=dark",
+  },
+  {
+    name: "Lithium", shortName: "Lithium", unit: "USD / tonne",
+    note: "Sédiments marins profonds", color: "#5EC47A",
+    chartUrl: "https://sslcharts.investing.com/index.php?force_lang=5&pair_id=1060519&theme=dark",
+  },
+];
 
-  try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=6mo`;
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) throw new Error(`Yahoo: ${response.status}`);
-
-    const data = await response.json();
-    const chart = data?.chart?.result?.[0];
-
-    if (!chart) throw new Error('Pas de données');
-
-    const timestamps = chart.timestamp;
-    const closes = chart.indicators.quote[0].close;
-    const meta = chart.meta;
-
-    // Nettoie les nulls
-    const points = timestamps
-      .map((t, i) => ({ date: t * 1000, price: closes[i] }))
-      .filter(p => p.price !== null && p.price !== undefined);
-
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
-    res.status(200).json({
-      symbol: meta.symbol,
-      currency: meta.currency,
-      currentPrice: meta.regularMarketPrice,
-      previousClose: meta.previousClose || meta.chartPreviousClose,
-      points,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
+module.exports = { SITE_TITLE, SITE_SUBTITLE, METALS };
