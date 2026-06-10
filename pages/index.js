@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { SITE_TITLE, SITE_SUBTITLE, METALS } from '../metals.config';
 
 export default function Dashboard() {
-  // Période globale sélectionnée : '3mo', '6mo', '5y', '10y'
   const [range, setRange] = useState('6mo');
 
   const rangeOptions = [
@@ -20,26 +19,24 @@ export default function Dashboard() {
             <h1>{SITE_TITLE}</h1>
             <p>{SITE_SUBTITLE}</p>
           </div>
-
-          {/* Sélecteur temporel horizontal persistant */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-            {rangeOptions.map((option) => (
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {rangeOptions.map((opt) => (
               <button
-                key={option.value}
-                onClick={() => setRange(option.value)}
+                key={opt.value}
+                onClick={() => setRange(opt.value)}
                 style={{
-                  background: range === option.value ? '#1E2A3A' : 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  color: range === option.value ? '#E8EBF0' : 'var(--muted)',
-                  padding: '6px 14px',
+                  background: range === opt.value ? '#223249' : 'var(--surface)',
+                  border: `1px solid ${range === opt.value ? '#3b82f6' : 'var(--border)'}`,
+                  color: range === opt.value ? '#FFF' : 'var(--muted)',
+                  padding: '8px 16px',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '12px',
                   fontWeight: '600',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.2s ease'
                 }}
               >
-                {option.label}
+                {opt.label}
               </button>
             ))}
           </div>
@@ -47,11 +44,6 @@ export default function Dashboard() {
       </div>
 
       <div className="main">
-        <div className="banner">
-          ⚠ Les ressources minérales des grands fonds n'étant pas vendues sur des bourses publiques, 
-          les cours affichés s'appuient sur les indices et les plus grands producteurs mondiaux (proxies).
-        </div>
-
         <div className="grid">
           {METALS.map((metal) => (
             <MetalCard key={metal.shortName} metal={metal} range={range} />
@@ -60,7 +52,7 @@ export default function Dashboard() {
       </div>
 
       <div className="footer">
-        <span>Données synchronisées en temps réel via l'API Edge de Yahoo Finance</span>
+        <span>Flux hybride (Indices Spots pur, ETCs physiques & Pure-Plays stratégiques)</span>
         <span>{new Date().getFullYear()}</span>
       </div>
     </>
@@ -74,10 +66,10 @@ function MetalCard({ metal, range }) {
 
   useEffect(() => {
     async function fetchData() {
-      setLoading(true); // Relance l'état de chargement lors du changement de période
+      setLoading(true);
       try {
         const res = await fetch(`/api/metal?symbol=${encodeURIComponent(metal.shortName)}&range=${range}`);
-        if (!res.ok) throw new Error('Erreur de requête');
+        if (!res.ok) throw new Error('Erreur réseau');
         const json = await res.json();
         if (json.error) throw new Error(json.error);
         setData(json);
@@ -91,141 +83,132 @@ function MetalCard({ metal, range }) {
     fetchData();
   }, [metal.shortName, range]);
 
-  const getVariation = () => {
-    if (!data || !data.previousClose) return { percent: "0.00", isPositive: true };
-    const change = data.currentPrice - data.previousClose;
-    const percent = (change / data.previousClose) * 100;
-    return {
-      percent: percent.toFixed(2),
-      isPositive: change >= 0
-    };
-  };
+  const prices = data?.points?.map(p => p.price) || [];
+  const minPeriod = prices.length ? Math.min(...prices) : 0;
+  const maxPeriod = prices.length ? Math.max(...prices) : 0;
 
-  const variation = getVariation();
+  const changePercent = data && data.previousClose
+    ? (((data.currentPrice - data.previousClose) / data.previousClose) * 100).toFixed(2)
+    : "0.00";
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <div>
-          <div className="card-title" style={{ color: metal.color }}>
-            {metal.name}
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <div>
+        <div className="card-header">
+          <div>
+            <div className="card-title" style={{ color: metal.color, fontSize: '16px', fontWeight: '700' }}>
+              {metal.name}
+            </div>
+            <div className="card-unit">{metal.unit}</div>
           </div>
-          <div className="card-unit">{metal.unit}</div>
+          <span className="badge" style={{ background: `${metal.color}15`, color: metal.color, border: `1px solid ${metal.color}30` }}>
+            {metal.proxyName.split(' ')[0]}
+          </span>
         </div>
-        <span className="badge" style={{ background: `${metal.color}15`, color: metal.color }}>
-          {metal.proxyName}
-        </span>
-      </div>
-      <div className="accent-line" style={{ backgroundColor: metal.color }} />
-      <div className="card-note">{metal.note}</div>
-
-      <div style={{ padding: '4px 16px 12px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-        {loading ? (
-          <span style={{ fontSize: '16px', color: 'var(--muted)' }}>Analyse minière...</span>
-        ) : error ? (
-          <span style={{ fontSize: '13px', color: '#EF4444' }}>Indice non disponible</span>
-        ) : (
-          <>
-            <span style={{ fontSize: '22px', fontWeight: 'bold' }}>
-              {data.currentPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} {data.currency === 'ILA' ? 'GBp' : data.currency}
-            </span>
-            <span style={{ fontSize: '13px', fontWeight: '600', color: variation.isPositive ? '#10B981' : '#EF4444' }}>
-              {variation.isPositive ? '▲ +' : '▼ '}{variation.percent}%
-            </span>
-          </>
-        )}
+        <div className="accent-line" style={{ backgroundColor: metal.color, opacity: 0.4 }} />
+        <div className="card-note" style={{ minHeight: '36px', marginTop: '8px' }}>{metal.note}</div>
       </div>
 
-      <div className="chart-container" style={{ height: '170px', padding: '0 12px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {loading ? (
-          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Sondage des strates...</div>
-        ) : error ? (
-          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Graphique indisponible</div>
-        ) : data?.points && data.points.length > 0 ? (
-          <MarineChart points={data.points} color={metal.color} />
-        ) : (
-          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Aucun historique disponible</div>
-        )}
+      <div>
+        <div style={{ padding: '0 16px 8px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          {loading ? (
+            <span style={{ fontSize: '20px', color: '#4A5568' }}>Chargement...</span>
+          ) : error ? (
+            <span style={{ fontSize: '14px', color: '#EF4444' }}>Indice indisponible</span>
+          ) : (
+            <>
+              <span style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px' }}>
+                {data.currentPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span style={{ fontSize: '14px', color: 'var(--muted)' }}>{data.currency}</span>
+              </span>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: parseFloat(changePercent) >= 0 ? '#10B981' : '#EF4444' }}>
+                {parseFloat(changePercent) >= 0 ? '▲ +' : '▼ '}{changePercent}%
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Conteneur Graphique Avancé */}
+        <div style={{ height: '140px', padding: '0 16px 12px position relative' }}>
+          {!loading && !error && data?.points?.length > 0 ? (
+            <EnhancedChart points={data.points} color={metal.color} minPrice={minPeriod} maxPrice={maxPeriod} />
+          ) : (
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4A5568', fontSize: '12px' }}>
+              {loading ? 'Extraction des strates temporelles...' : 'Pas de graphique'}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function MarineChart({ points, color }) {
-  const width = 380;
-  const height = 150;
+function EnhancedChart({ points, color, minPrice, maxPrice }) {
+  const width = 400;
+  const height = 130;
   
-  // Marges intérieures pour laisser de l'espace aux textes des axes
-  const paddingLeft = 55;
+  const paddingLeft = 50;
   const paddingRight = 10;
-  const paddingTop = 10;
-  const paddingBottom = 22;
+  const paddingTop = 15;
+  const paddingBottom = 20;
 
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
-
-  const prices = points.map(p => p.price);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
   const priceRange = maxPrice - minPrice || 1;
 
-  // Conversion pixel-responsive des coordonnées de prix
-  const svgPoints = points.map((p, i) => {
-    const x = paddingLeft + (points.length > 1 ? (i / (points.length - 1)) * chartWidth : 0);
+  // Génération des coordonnées de la courbe boursière
+  const coords = points.map((p, i) => {
+    const x = paddingLeft + (i / (points.length - 1)) * chartWidth;
     const y = paddingTop + chartHeight - ((p.price - minPrice) / priceRange) * chartHeight;
-    return `${x},${y}`;
-  }).join(' ');
+    return { x, y };
+  });
 
-  // Formate les dates proprement selon la langue
-  const formatDate = (timestamp) => {
-    if (!timestamp) return '';
-    const d = new Date(timestamp);
-    return d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
-  };
+  const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x} ${c.y}`).join(' ');
+  
+  // Chemin fermé pour le dégradé de couleur sous la courbe (Area Fill)
+  const areaPath = coords.length 
+    ? `${linePath} L ${coords[coords.length - 1].x} ${paddingTop + chartHeight} L ${coords[0].x} ${paddingTop + chartHeight} Z`
+    : '';
 
-  const firstDate = points[0] ? formatDate(points[0].date) : '';
-  const lastDate = points[points.length - 1] ? formatDate(points[points.length - 1].date) : '';
-  const midDate = points[Math.floor(points.length / 2)] ? formatDate(points[Math.floor(points.length / 2)].date) : '';
+  const formatDate = (ts) => new Date(ts).toLocaleDateString('fr-FR', { month: '2-digit', year: '2-digit' });
+
+  // Identifiant unique pour éviter les collisions de dégradés SVG
+  const gradientId = `grad-${color.replace('#', '')}`;
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: 'visible' }}>
-      {/* Grille de repères horizontaux */}
-      <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft + chartWidth} y2={paddingTop} stroke="var(--border)" strokeWidth="0.5" strokeDasharray="4 4" />
-      <line x1={paddingLeft} y1={paddingTop + chartHeight / 2} x2={paddingLeft + chartWidth} y2={paddingTop + chartHeight / 2} stroke="var(--border)" strokeWidth="0.5" strokeDasharray="4 4" />
-      <line x1={paddingLeft} y1={paddingTop + chartHeight} x2={paddingLeft + chartWidth} y2={paddingTop + chartHeight} stroke="var(--border)" strokeWidth="1" />
-      
-      {/* Axe vertical Y */}
-      <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={paddingTop + chartHeight} stroke="var(--border)" strokeWidth="1" />
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.00" />
+        </linearGradient>
+      </defs>
 
-      {/* Graduations Axe Y (Prix Extrêmes) */}
-      <text x={paddingLeft - 8} y={paddingTop + 4} fill="var(--muted)" fontSize="10" fontWeight="500" textAnchor="end">
+      {/* Lignes de repères en arrière-plan */}
+      <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft + chartWidth} y2={paddingTop} stroke="#1E2A3A" strokeWidth="0.5" strokeDasharray="3 3" />
+      <line x1={paddingLeft} y1={paddingTop + chartHeight} x2={paddingLeft + chartWidth} y2={paddingTop + chartHeight} stroke="#1E2A3A" strokeWidth="1" />
+      <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={paddingTop + chartHeight} stroke="#1E2A3A" strokeWidth="1" />
+
+      {/* Remplissage de l'aire (Gradient) */}
+      {areaPath && <path d={areaPath} fill={`url(#${gradientId})`} />}
+
+      {/* Ligne principale du cours */}
+      {linePath && <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+
+      {/* Bornes financières (Y-Axis Labels) */}
+      <text x={paddingLeft - 8} y={paddingTop + 4} fill="#6272a4" fontSize="10" fontWeight="600" textAnchor="end">
         {maxPrice.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}
       </text>
-      <text x={paddingLeft - 8} y={paddingTop + chartHeight + 4} fill="var(--muted)" fontSize="10" fontWeight="500" textAnchor="end">
+      <text x={paddingLeft - 8} y={paddingTop + chartHeight + 4} fill="#6272a4" fontSize="10" fontWeight="600" textAnchor="end">
         {minPrice.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}
       </text>
 
-      {/* Graduations Axe X (Dates Repères) */}
-      <text x={paddingLeft} y={paddingTop + chartHeight + 16} fill="var(--muted)" fontSize="10" textAnchor="start">
-        {firstDate}
+      {/* Bornes temporelles (X-Axis Labels) */}
+      <text x={paddingLeft} y={paddingTop + chartHeight + 15} fill="#4A5568" fontSize="10" textAnchor="start">
+        {formatDate(points[0].date)}
       </text>
-      <text x={paddingLeft + chartWidth / 2} y={paddingTop + chartHeight + 16} fill="var(--muted)" fontSize="10" textAnchor="middle">
-        {midDate}
+      <text x={paddingLeft + chartWidth} y={paddingTop + chartHeight + 15} fill="#4A5568" fontSize="10" textAnchor="end">
+        {formatDate(points[points.length - 1].date)}
       </text>
-      <text x={paddingLeft + chartWidth} y={paddingTop + chartHeight + 16} fill="var(--muted)" fontSize="10" textAnchor="end">
-        {lastDate}
-      </text>
-
-      {/* Tracé de la courbe vectorielle */}
-      <polyline
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={svgPoints}
-        style={{ opacity: 0.9 }}
-      />
     </svg>
   );
 }
