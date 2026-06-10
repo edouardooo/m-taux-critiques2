@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { SITE_TITLE, SITE_SUBTITLE, METALS } from '../metals.config';
 
 export default function Dashboard() {
@@ -28,7 +29,7 @@ export default function Dashboard() {
       </div>
 
       <div className="footer">
-        <span>Graphiques fournis par Investing.com</span>
+        <span>Données propulsées par Yahoo Finance API via Next.js Route</span>
         <span>{new Date().getFullYear()}</span>
       </div>
     </>
@@ -36,6 +37,41 @@ export default function Dashboard() {
 }
 
 function MetalCard({ metal }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Appelle votre API interne (/pages/api/metal.js)
+        const res = await fetch(`/api/metal?symbol=${encodeURIComponent(metal.shortName)}`);
+        if (!res.ok) throw new Error('Erreur réseau');
+        const json = await res.body ? await res.json() : null;
+        if (json?.error) throw new Error(json.error);
+        setData(json);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [metal.shortName]);
+
+  // Calcul de la variation de prix
+  const getVariation = () => {
+    if (!data || !data.previousClose) return { percent: 0, isPositive: true };
+    const change = data.currentPrice - data.previousClose;
+    const percent = (change / data.previousClose) * 100;
+    return {
+      percent: percent.toFixed(2),
+      isPositive: change >= 0
+    };
+  };
+
+  const variation = getVariation();
+
   return (
     <div className="card">
       <div className="card-header">
@@ -49,17 +85,74 @@ function MetalCard({ metal }) {
           {metal.shortName}
         </span>
       </div>
+
       <div className="accent-line" style={{ backgroundColor: metal.color }} />
       <div className="card-note">{metal.note}</div>
-      <div className="chart-container">
-        <iframe
-          src={metal.chartUrl}
-          title={`Graphique ${metal.name}`}
-          frameBorder="0"
-          scrolling="no"
-          allowFullScreen={true}
-        />
+
+      {/* Zone d'affichage du Prix & de la Variation */}
+      <div style={{ padding: '0 16px 12px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+        {loading ? (
+          <span style={{ fontSize: '18px', color: 'var(--muted)' }}>Chargement...</span>
+        ) : error ? (
+          <span style={{ fontSize: '13px', color: '#EF4444' }}>Données indisponibles</span>
+        ) : (
+          <>
+            <span style={{ fontSize: '22px', fontWeight: 'bold' }}>
+              {data.currentPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} {data.currency}
+            </span>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: variation.isPositive ? '#10B981' : '#EF4444' }}>
+              {variation.isPositive ? '+' : ''}{variation.percent}%
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* Conteneur Graphique SVG Interactif / Natif */}
+      <div className="chart-container" style={{ height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {loading ? (
+          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Génération du graphique...</div>
+        ) : error ? (
+          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Graphique non disponible</div>
+        ) : data?.points && data.points.length > 0 ? (
+          <SvgLineChart points={data.points} color={metal.color} />
+        ) : (
+          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Aucun historique disponible</div>
+        )}
       </div>
     </div>
+  );
+}
+
+// Composant interne pour dessiner une courbe SVG pure sans dépendances tierces
+function SvgLineChart({ points, color }) {
+  const width = 340;
+  const height = 120;
+  const padding = 10;
+
+  const prices = points.map(p => p.price);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const priceRange = maxPrice - minPrice || 1;
+
+  // Traduction des points en coordonnées pixels pour le SVG
+  const svgPoints = points.map((p, i) => {
+    const x = padding + (i / (points.length - 1)) * (width - padding * 2);
+    // Inverse l'axe Y car en SVG le 0 est en haut
+    const y = height - padding - ((p.price - minPrice) / priceRange) * (height - padding * 2);
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%">
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={svgPoints}
+        style={{ opacity: 0.85 }}
+      />
+    </svg>
   );
 }
