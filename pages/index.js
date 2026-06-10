@@ -13,12 +13,8 @@ export default function Dashboard() {
 
       <div className="main">
         <div className="banner">
-          ⚠ Les <strong style={{ color: '#D4A843' }}>terres rares (REY)</strong> ne sont pas cotées
-          sur des marchés organisés. Consulter{' '}
-          <a href="https://www.asianmetal.com" target="_blank" rel="noopener noreferrer">Asian Metal</a>
-          {' '}ou{' '}
-          <a href="https://www.usgs.gov/centers/national-minerals-information-center" target="_blank" rel="noopener noreferrer">USGS</a>
-          {' '}pour leurs prix.
+          ⚠ Les ressources minérales marines brutes ne sont pas cotées sur des marchés organisés. 
+          Les valeurs affichées ci-dessous représentent les indices et métaux boursiers directeurs (proxies).
         </div>
 
         <div className="grid">
@@ -29,7 +25,7 @@ export default function Dashboard() {
       </div>
 
       <div className="footer">
-        <span>Données propulsées par Yahoo Finance API via Next.js Route</span>
+        <span>Données actualisées via l'API Yahoo Finance</span>
         <span>{new Date().getFullYear()}</span>
       </div>
     </>
@@ -44,11 +40,11 @@ function MetalCard({ metal }) {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Appelle votre API interne (/pages/api/metal.js)
+        // Interroge votre route API interne
         const res = await fetch(`/api/metal?symbol=${encodeURIComponent(metal.shortName)}`);
-        if (!res.ok) throw new Error('Erreur réseau');
-        const json = await res.body ? await res.json() : null;
-        if (json?.error) throw new Error(json.error);
+        if (!res.ok) throw new Error('Erreur de chargement');
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
         setData(json);
       } catch (err) {
         setError(err.message);
@@ -59,9 +55,9 @@ function MetalCard({ metal }) {
     fetchData();
   }, [metal.shortName]);
 
-  // Calcul de la variation de prix
+  // Calcul de la tendance de prix (variation en %)
   const getVariation = () => {
-    if (!data || !data.previousClose) return { percent: 0, isPositive: true };
+    if (!data || !data.previousClose) return { percent: "0.00", isPositive: true };
     const change = data.currentPrice - data.previousClose;
     const percent = (change / data.previousClose) * 100;
     return {
@@ -82,76 +78,74 @@ function MetalCard({ metal }) {
           <div className="card-unit">{metal.unit}</div>
         </div>
         <span className="badge" style={{ background: `${metal.color}18`, color: metal.color }}>
-          {metal.shortName}
+          {metal.proxyName}
         </span>
       </div>
-
       <div className="accent-line" style={{ backgroundColor: metal.color }} />
       <div className="card-note">{metal.note}</div>
 
-      {/* Zone d'affichage du Prix & de la Variation */}
-      <div style={{ padding: '0 16px 12px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+      {/* Affichage dynamique de la valeur en temps réel */}
+      <div style={{ padding: '4px 16px 12px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
         {loading ? (
-          <span style={{ fontSize: '18px', color: 'var(--muted)' }}>Chargement...</span>
+          <span style={{ fontSize: '18px', color: 'var(--muted)' }}>Analyse du gisement...</span>
         ) : error ? (
-          <span style={{ fontSize: '13px', color: '#EF4444' }}>Données indisponibles</span>
+          <span style={{ fontSize: '13px', color: '#EF4444' }}>Indice indisponible</span>
         ) : (
           <>
             <span style={{ fontSize: '22px', fontWeight: 'bold' }}>
               {data.currentPrice?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} {data.currency}
             </span>
             <span style={{ fontSize: '13px', fontWeight: '600', color: variation.isPositive ? '#10B981' : '#EF4444' }}>
-              {variation.isPositive ? '+' : ''}{variation.percent}%
+              {variation.isPositive ? '▲ +' : '▼ '}{variation.percent}%
             </span>
           </>
         )}
       </div>
 
-      {/* Conteneur Graphique SVG Interactif / Natif */}
-      <div className="chart-container" style={{ height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {/* Remplacement de l'iframe par le graphique SVG de l'historique sur 6 mois */}
+      <div className="chart-container" style={{ height: '140px', padding: '0 10px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {loading ? (
-          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Génération du graphique...</div>
+          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Extraction de l'historique...</div>
         ) : error ? (
-          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Graphique non disponible</div>
+          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Données historiques absentes</div>
         ) : data?.points && data.points.length > 0 ? (
-          <SvgLineChart points={data.points} color={metal.color} />
+          <MarineChart points={data.points} color={metal.color} />
         ) : (
-          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Aucun historique disponible</div>
+          <div style={{ color: 'var(--muted)', fontSize: '12px' }}>Aucun point de données</div>
         )}
       </div>
     </div>
   );
 }
 
-// Composant interne pour dessiner une courbe SVG pure sans dépendances tierces
-function SvgLineChart({ points, color }) {
+// Composant interne pour dessiner la courbe historique sans installer de librairie tierce massive
+function MarineChart({ points, color }) {
   const width = 340;
-  const height = 120;
-  const padding = 10;
+  const height = 130;
+  const padding = 8;
 
   const prices = points.map(p => p.price);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
   const priceRange = maxPrice - minPrice || 1;
 
-  // Traduction des points en coordonnées pixels pour le SVG
+  // Conversion des données en coordonnées SVG (Inversion de l'axe Y car le point 0 est en haut)
   const svgPoints = points.map((p, i) => {
     const x = padding + (i / (points.length - 1)) * (width - padding * 2);
-    // Inverse l'axe Y car en SVG le 0 est en haut
     const y = height - padding - ((p.price - minPrice) / priceRange) * (height - padding * 2);
     return `${x},${y}`;
   }).join(' ');
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%">
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: 'visible' }}>
       <polyline
         fill="none"
         stroke={color}
-        strokeWidth="2.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
         points={svgPoints}
-        style={{ opacity: 0.85 }}
+        style={{ opacity: 0.9 }}
       />
     </svg>
   );
