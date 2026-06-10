@@ -1,118 +1,131 @@
 // metals.config.js
 export const SITE_TITLE = "Observatoire des Ressources Minérales Sous-Marines";
-export const SITE_SUBTITLE = "Suivi des 14 métaux critiques des nodules, encroûtements et amas sulfurés profonds";
+export const SITE_SUBTITLE = "Indice de transparence des 14 métaux critiques des grands fonds";
 
 export const METALS = [
-  {
-    name: "Manganèse",
-    proxyName: "Eramet (ERA.PA)",
-    shortName: "ERA.PA",
-    unit: "Cours de l'action (EUR)",
-    color: "#9B5DE5",
-    note: "Composant ultra-majoritaire des nodules polymétalliques des plaines abyssales."
-  },
-  {
-    name: "Nickel",
-    proxyName: "Vale S.A. (VALE)",
-    shortName: "VALE",
-    unit: "Cours de l'action (USD)",
-    color: "#4EA8DE",
-    note: "Métal critique des nodules, indispensable pour les batteries de nouvelle génération."
-  },
   {
     name: "Cuivre",
     proxyName: "Futures COMEX (HG=F)",
     shortName: "HG=F",
     unit: "USD / Livre (lb)",
     color: "#E63946",
-    note: "Abondant dans les amas sulfurés hydrothermaux et les nodules."
+    proxyType: "Physique Direct",
+    note: "Contrat à terme officiel. Reflète à 100% le cours physique mondial."
   },
   {
-    name: "Titane",
-    proxyName: "ATI Inc. (ATI)",
-    shortName: "ATI",
-    unit: "Cours de l'action (USD)",
-    color: "#8D99AE",
-    note: "Présent dans les encroûtements et sédiments profonds, crucial pour l'aérospatial."
+    name: "Nickel",
+    proxyName: "WisdomTree ETC (NICK.L)",
+    shortName: "NICK.L",
+    unit: "Index de prix (USD)",
+    color: "#4EA8DE",
+    proxyType: "Physique (ETC)",
+    note: "Traqueur adossé directement aux stocks physiques du London Metal Exchange (LME)."
   },
   {
     name: "Cobalt",
-    proxyName: "Glencore (GLNCY)",
-    shortName: "GLNCY",
-    unit: "Cours de l'action (USD)",
+    proxyName: "WisdomTree ETC (COBA.L)",
+    shortName: "COBA.L",
+    unit: "Index de prix (USD)",
     color: "#0077B6",
-    note: "Concentration record dans les encroûtements cobaltifères des monts sous-marins."
+    proxyType: "Physique (ETC)",
+    note: "Adossé au Bloomberg Cobalt Index. Bien meilleur que l'action Glencore."
+  },
+  {
+    name: "Lithium",
+    proxyName: "Albemarle (ALB)",
+    shortName: "ALB",
+    unit: "Action d'entreprise (USD)",
+    color: "#3A86FF",
+    proxyType: "Proxy Action (Imparfait)",
+    note: "Pas de cotation physique directe propre sur Yahoo. Indexé sur le leader mondial du lithium."
   },
   {
     name: "Terres Rares (TREE)",
-    proxyName: "ETF Strategic Metals (REMX)",
+    proxyName: "ETF VanEck (REMX)",
     shortName: "REMX",
     unit: "Cours de l'indice (USD)",
     color: "#06D6A0",
-    note: "Proxy global pour le groupe des Terres Rares (Total Rare Earth Elements)."
-  },
-  {
-    name: "Molybdène",
-    proxyName: "CMOC Group (CMCLF)",
-    shortName: "CMCLF",
-    unit: "Cours de l'action (USD)",
-    color: "#FFB703",
-    note: "Alliage de haute performance, présent comme sous-produit des nodules."
+    proxyType: "Proxy Panier d'Actions",
+    note: "Aucun cours physique global existant. Panier des 20 plus gros producteurs de terres rares."
   },
   {
     name: "Vanadium",
     proxyName: "Largo Inc. (LGO)",
     shortName: "LGO",
-    unit: "Cours de l'action (USD)",
+    unit: "Action Pure-Play (USD)",
     color: "#FB8500",
-    note: "Métal stratégique pour le stockage d'énergie stationnaire à grande échelle."
+    proxyType: "Proxy Action (Acceptable)",
+    note: "Compagnie minière pure-play. Ses revenus dépendent exclusivement du Vanadium."
   },
   {
     name: "Zirconium",
     proxyName: "Iluka Resources (ILKAY)",
     shortName: "ILKAY",
-    unit: "Cours de l'action (USD)",
+    unit: "Action Pure-Play (USD)",
     color: "#E07A5F",
-    note: "Issu des minéraux lourds des placers marins et encroûtements."
-  },
-  {
-    name: "Thallium",
-    proxyName: "Teck Resources (TECK)",
-    shortName: "TECK",
-    unit: "Cours de l'action (USD)",
-    color: "#F4A261",
-    note: "Métal ultra-rare, sous-produit des sulfures massifs de plomb et zinc."
-  },
-  {
-    name: "Lithium",
-    proxyName: "Global X ETF (LIT)",
-    shortName: "LIT",
-    unit: "Cours de l'indice (USD)",
-    color: "#3A86FF",
-    note: "Traces d'intérêt technologique majeur au sein des boues pélagiques."
-  },
-  {
-    name: "Yttrium",
-    proxyName: "Lynas Rare Earths (LYSCF)",
-    shortName: "LYSCF",
-    unit: "Cours de l'action (USD)",
-    color: "#FF006E",
-    note: "Terre rare lourde fortement enrichie dans les boues métallifères océaniques."
+    proxyType: "Proxy Action (Imparfait)",
+    note: "Pas de marché public pour le Zircon. Iluka est le thermomètre du secteur."
   },
   {
     name: "Tungstène",
     proxyName: "Almonty Ind. (ALMTF)",
     shortName: "ALMTF",
-    unit: "Cours de l'action (USD)",
+    unit: "Action Pure-Play (USD)",
     color: "#7209B7",
-    note: "Métal à point de fusion extrême, critique pour les outils de forage et de défense."
+    proxyType: "Proxy Action (Imparfait)",
+    note: "Marché de gré à gré. Almonty est l'un des rares exploitants pure-play au monde."
   },
   {
     name: "Tellure (Tellurium)",
     proxyName: "5N Plus (FNPUF)",
     shortName: "FNPUF",
-    unit: "Cours de l'action (USD)",
+    unit: "Action Spécialisée (USD)",
     color: "#2A9D8F",
-    note: "Semi-conducteur d'une rareté extrême, lié aux dépôts de cuivre sous-marins."
+    proxyType: "Proxy Action (Mauvais)",
+    note: "Métal ultra-opaque, sous-produit du cuivre. 5N Plus est un transformateur, pas un cours physique."
+  },
+  {
+    name: "Yttrium",
+    proxyName: "Lynas Rare Earths (LYSCF)",
+    shortName: "LYSCF",
+    unit: "Action Spécialisée (USD)",
+    color: "#FF006E",
+    proxyType: "Proxy Action (Mauvais)",
+    note: "L'Yttrium pur n'a pas de cours boursier. Lynas l'extrait au milieu d'autres terres rares."
+  },
+  {
+    name: "Manganèse",
+    proxyName: "Jupiter Mines (JAOMF)",
+    shortName: "JAOMF",
+    unit: "Action Spécialisée (USD)",
+    color: "#9B5DE5",
+    proxyType: "Proxy Action (Mauvais)",
+    note: "Le minerai brute se négocie par contrats privés. Jupiter opère une mine pure en Afrique du Sud."
+  },
+  {
+    name: "Titane",
+    proxyName: "Kenmare Res. (KMR.L)",
+    shortName: "KMR.L",
+    unit: "Action Spécialisée (GBP)",
+    color: "#8D99AE",
+    proxyType: "Proxy Action (Mauvais)",
+    note: "Marché opaque. Kenmare produit le sable d'Ilménite brute servant de base au titane."
+  },
+  {
+    name: "Molybdène",
+    proxyName: "CMOC Group (CMCLF)",
+    shortName: "CMCLF",
+    unit: "Action Diversifiée (Mauvais)",
+    color: "#FFB703",
+    note: "Premier producteur mondial, mais le cours de l'action est pollué par ses mines de cuivre majeures."
+  },
+  {
+    name: "Thallium",
+    proxyName: "Teck Resources (TECK)",
+    shortName: "TECK",
+    unit: "Action Diversifiée (Inadapté)",
+    color: "#F4A261",
+    proxyType: "Aucun Proxy Fiable",
+    note: "Métal confidentiel sans aucune cotation. Teck est un des rares à le raffiner comme sous-produit."
   }
 ];
